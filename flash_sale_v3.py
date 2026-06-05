@@ -40,7 +40,8 @@ BASE = "https://shopee.co.id"
 API = {
     "item_info":     f"{BASE}/api/v2/item/get",
     "flash_sale":    f"{BASE}/api/v4/flash_sale/flash_sale_batch_get_items",
-    "flash_sessions":f"{BASE}/api/v4/flash_sale/get_all_sessions",
+    "flash_sessions":f"{BASE}/api/v4/flash_sale/get_all",
+    "flash_sale_v2": f"{BASE}/api/v2/flash_sale/get_items",
     "account_info":  f"{BASE}/api/v2/user/account_info",
     "addresses":     f"{BASE}/api/v1/addresses",
     "add_cart":      f"{BASE}/api/v4/cart/add_to_cart",
@@ -49,15 +50,25 @@ API = {
 }
 
 HEADERS_BASE = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
     "Accept": "application/json",
+    "Accept-Language": "id-ID,id;q=0.9,en;q=0.8",
+    "Accept-Encoding": "gzip, deflate, br",
     "Content-Type": "application/json",
     "Referer": "https://shopee.co.id/",
     "Origin": "https://shopee.co.id",
     "X-Requested-With": "XMLHttpRequest",
     "X-API-Source": "pc",
     "X-Shopee-Language": "id",
+    "X-SZ-SDK-Version": "1.10.1.5",
     "af-ac-enc-dat": "null",
+    "szdet": "null",
+    "sec-ch-ua": '"Chromium";v="131", "Not_A Brand";v="24"',
+    "sec-ch-ua-mobile": "?1",
+    "sec-ch-ua-platform": '"Android"',
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
 }
 
 # ═══════════════════════════════════════════════════════════
@@ -227,10 +238,29 @@ class ShopeeClient:
         all_sessions = []
         for page in range(SCAN_PAGES):
             offset = page * 20
+            # Try v4 endpoint first
             url = f"{API['flash_sessions']}?limit=20&offset={offset}&need_items=1&with_dp_items=1"
             data = self._request("GET", url)
-            print(f"  📡 Flash sale API response (page {page}): {json.dumps(data)[:500]}")
-            sessions = data.get("data", {}).get("sessions", []) or data.get("data", {}).get("flash_sale_sessions", []) or data.get("data", [])
+            print(f"  📡 Flash sale API v4 response (page {page}): {json.dumps(data)[:300]}")
+            
+            sessions = (
+                data.get("data", {}).get("sessions", [])
+                or data.get("data", {}).get("flash_sale_sessions", [])
+                or data.get("data", {}).get("items", [])
+                or (data.get("data", []) if isinstance(data.get("data"), list) else [])
+            )
+            
+            # If v4 fails, try v2 endpoint
+            if not sessions and page == 0:
+                url_v2 = f"{API['flash_sale_v2']}?offset={offset}&limit=20&sort_type=2"
+                data = self._request("GET", url_v2)
+                print(f"  📡 Flash sale API v2 response: {json.dumps(data)[:300]}")
+                sessions = (
+                    data.get("data", {}).get("items", [])
+                    or data.get("data", {}).get("sessions", [])
+                    or (data.get("data", []) if isinstance(data.get("data"), list) else [])
+                )
+            
             if not sessions:
                 break
             if isinstance(sessions, list):
