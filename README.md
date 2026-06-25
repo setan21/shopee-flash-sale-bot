@@ -1,18 +1,16 @@
-# ⚡ Shopee Flash Sale Sniper Bot v3 (Enhanced Fork)
+# ⚡ Shopee Flash Sale Sniper Bot v4 (Ultimate Edition)
 
-Bot auto-serbu flash sale Shopee — bisa cari sendiri produk Rp 1!
+Bot auto-serbu flash sale Shopee — multi-account, always-on monitor, keyword filter, SQLite DB, Docker support!
 
-**Fork dari [Muklaszin/shopee-flash-sale-bot](https://github.com/Muklaszin/shopee-flash-sale-bot)** — ditambah fitur baru.
-
-## ✨ Yang Baru di v3
-
-| Fitur | Deskripsi |
-|-------|-----------|
-| 🔄 **Proxy Rotation** | Rotasi proxy otomatis hindari IP ban |
-| 📱 **Telegram Notif** | Notifikasi sukses/gagal via Telegram bot |
-| 📊 **Stats Tracking** | Track success rate, latency, proxy rotations |
-| 🛡️ **Rate Limit Handling** | Deteksi rate limit + auto-cooldown + proxy switch |
-| 🔁 **Exponential Backoff** | Retry dengan delay yang naik bertahap |
+**v4 New Features:**
+- 📂 **Multi-Account** — scan `accounts/` directory, run all accounts in parallel
+- 📋 **YAML Config** — `config.yaml` externalizes all settings
+- 🔍 **Keyword Filter** — include/exclude keywords for item names
+- 🗄️ **SQLite Database** — purchase history tracking with `shopee_sniper.db`
+- 👁️ **Monitor Mode** (`--monitor`) — always-on price checking, auto-buy on price drop
+- 📝 **File-based Logging** — rotating logs in `logs/sniper.log`
+- 🐳 **Docker Support** — Dockerfile + docker-compose.yml
+- 🔄 Proxy rotation, Telegram notifications, stats tracking (from v3)
 
 ## 🚀 Quick Start
 
@@ -23,56 +21,98 @@ cd shopee-flash-sale-bot
 pip install -r requirements.txt
 ```
 
-### 2. Ambil Cookie Shopee
-1. Login **shopee.co.id** di Chrome
-2. Install ekstensi **Cookie-Editor** (by cgagnier)
-3. Klik icon Cookie-Editor → **Export** → **JSON**
-4. Simpan sebagai `cookies.json`
+### 2. Setup Accounts
 
-### 3. (Opsional) Setup Proxy
-Buat file `proxies.txt` — satu proxy per baris:
-```
-ip1:port1
-ip2:port2
-user:pass@ip3:port3
-```
+Create subdirectories in `accounts/` — one per Shopee account:
 
-### 4. (Opsional) Setup Telegram Notif
-Di `flash_sale_v3.py`:
-```python
-TELEGRAM_BOT_TOKEN = "your_bot_token"  # dari @BotFather
-TELEGRAM_CHAT_ID = "your_chat_id"       # dari @userinfobot
+```
+accounts/
+├── alice/
+│   └── cookies.json
+├── bob/
+│   ├── cookies.json
+│   └── config.yaml      # (optional) per-account overrides
+└── charlie/
+    └── cookies.json
 ```
 
-### 5. Jalankan
+Each `cookies.json` is exported via Cookie-Editor Chrome extension (Export → JSON).
 
-**Mode Auto-Scan** (bot cari produk murah sendiri):
+### 3. Configure
+
+Edit `config.yaml` to your liking. Key settings:
+
+```yaml
+cookie_dir: "accounts"
+default_max_price: 1000
+scan_pages: 5
+concurrent_requests: 5
+
+# Keyword filter (empty = include all)
+include_keywords: ["iphone", "airpods"]
+exclude_keywords: ["case", "charger"]
+
+# Monitor mode
+monitor_interval: 60
+monitor_price_drop_threshold: 0.9
+
+# Telegram notifications
+telegram_bot_token: ""
+telegram_chat_id: ""
+```
+
+### 4. Run
+
+**Auto-scan + snipe with all accounts:**
 ```bash
-python3 flash_sale_v3.py
+python3 flash_sale_v4.py
 ```
 
-**Mode Manual** (kasih link produk):
+**Run a single account:**
 ```bash
-python3 flash_sale_v3.py "https://shopee.co.id/Produk-Name-i.123456.789012"
+python3 flash_sale_v4.py --account alice
 ```
 
-**Mode Manual + Timer:**
+**Monitor mode (always-on price checking):**
 ```bash
-python3 flash_sale_v3.py "https://shopee.co.id/..." 1735683600
+python3 flash_sale_v4.py --monitor
 ```
 
-## ⚙️ Config
+**Manual mode (single product):**
+```bash
+python3 flash_sale_v4.py "https://shopee.co.id/..." 1735683600 --cookie cookies.json
+```
 
-| Variable | Default | Deskripsi |
-|----------|---------|-----------|
-| `AUTO_SCAN` | True | Bot cari produk murah otomatis |
-| `MAX_PRICE` | 1000 | Harga maksimum Rp |
-| `SCAN_PAGES` | 5 | Halaman flash sale di-scan |
-| `QUANTITY` | 1 | Jumlah item dibeli |
-| `CONCURRENT_REQUESTS` | 5 | Request checkout paralel |
-| `PAYMENT_CHANNEL_ID` | 8001400 | ShopeePay |
-| `PROXY_FILE` | proxies.txt | File daftar proxy |
-| `PROXY_ROTATE` | True | Rotasi proxy per request |
+### 5. Docker
+
+```bash
+docker-compose up -d
+```
+
+## ⚙️ Config Reference
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `cookie_dir` | accounts | Directory with account subfolders |
+| `default_max_price` | 1000 | Max item price (Rp) |
+| `scan_pages` | 5 | Flash sale pages to scan |
+| `concurrent_requests` | 5 | Parallel checkout requests |
+| `request_delay` | 0.02 | Delay between requests (seconds) |
+| `subtract_seconds` | 0.5 | Fire N seconds before official start |
+| `max_retries` | 10 | Max retry attempts |
+| `payment_channel_id` | 8001400 | ShopeePay default |
+| `include_keywords` | [] | Required keywords (empty = all) |
+| `exclude_keywords` | [] | Banned keywords (empty = none) |
+| `proxy_file` | proxies.txt | Proxy list file |
+| `proxy_protocol` | http | Proxy protocol (http/socks5) |
+| `proxy_rotate` | true | Rotate proxies per request |
+| `telegram_bot_token` | "" | Telegram bot token |
+| `telegram_chat_id` | "" | Telegram chat ID |
+| `database` | shopee_sniper.db | SQLite DB path |
+| `monitor_interval` | 60 | Monitor polling interval (seconds) |
+| `monitor_price_drop_threshold` | 0.9 | Price drop ratio to trigger buy |
+| `log_dir` | logs | Log file directory |
+| `log_level` | INFO | Log level (DEBUG/INFO/WARNING/ERROR) |
 
 ## 💳 Payment Channels
 
@@ -86,15 +126,27 @@ python3 flash_sale_v3.py "https://shopee.co.id/..." 1735683600
 | BNI | 89052003 |
 | BRI | 89052004 |
 
-## 🎯 Tips Menang
+## 📊 Database
+
+Purchase attempts are logged to `shopee_sniper.db` with:
+- item_id, shop_id, model_id
+- item_name, price
+- account_name
+- success/failure + error message
+- latency (ms)
+- timestamp (WIB)
+- mode (auto/manual/monitor)
+
+Check recent purchases:
+```bash
+sqlite3 shopee_sniper.db "SELECT * FROM purchases ORDER BY id DESC LIMIT 10;"
+```
+
+## 🎯 Tips
 
 - ⏱️ NTP sync = timing akurat ±5ms
-- 🚀 5 concurrent checkout = peluang 5x lebih besar
+- 🚀 Concurrent checkout = peluang lebih besar
 - 🔄 Proxy rotation = hindari IP ban
-- 📡 Direct API = jauh lebih cepat dari browser
+- 📂 Multi-account = snipe dari banyak akun sekaligus
 - 🍪 Cookie harus fresh (re-export kalau expired)
-- 📱 Telegram notif = tau hasilnya real-time
-
-## 📄 License
-
-MIT — Fork dari [Muklaszin/shopee-flash-sale-bot](https://github.com/Muklaszin/shopee-flash-sale-bot)
+- 👁️ Monitor mode = auto-buy when price drops

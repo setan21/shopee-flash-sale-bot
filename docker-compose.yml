@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  shopee-sniper-v4:
+    build: .
+    container_name: shopee-sniper
+    restart: unless-stopped
+    command: ["--monitor"]
+    volumes:
+      # Mount your accounts directory (one subfolder per account)
+      - ./accounts:/app/accounts
+      # Mount proxy list
+      - ./proxies.txt:/app/proxies.txt
+      # Mount config
+      - ./config.yaml:/app/config.yaml
+      # Persistent logs
+      - ./logs:/app/logs
+      # Persistent database
+      - ./shopee_sniper.db:/app/shopee_sniper.db
+      # Optional: .env for environment variables
+      - ./.env:/app/.env
+    environment:
+      - TZ=Asia/Jakarta
+    # Uncomment to limit resources
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "1"
+    #       memory: "512M"

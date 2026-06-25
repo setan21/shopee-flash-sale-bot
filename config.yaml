@@ -1,0 +1,37 @@
+# ═══════════════════════════════════════════════════════════
+# Shopee Flash Sale Sniper Bot v4 — Configuration
+# ═══════════════════════════════════════════════════════════
+
+# Main settings
+cookie_dir: "accounts"
+default_max_price: 1000
+scan_pages: 5
+concurrent_requests: 5
+request_delay: 0.02
+subtract_seconds: 0.5
+max_retries: 10
+payment_channel_id: 8001400  # ShopeePay
+
+# Keyword filter (NEW)
+include_keywords: []  # empty = all items
+exclude_keywords: []  # items to skip
+
+# Proxy
+proxy_file: "proxies.txt"
+proxy_protocol: "http"
+proxy_rotate: true
+
+# Telegram
+telegram_bot_token: ""
+telegram_chat_id: ""
+
+# Database (NEW)
+database: "shopee_sniper.db"
+
+# Monitor mode (NEW)
+monitor_interval: 60  # seconds
+monitor_price_drop_threshold: 0.9  # notify when price drops below 90% of monitored price
+
+# Logging (NEW)
+log_dir: "logs"
+log_level: "INFO"

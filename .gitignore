@@ -2,3 +2,8 @@ cookies.json
 __pycache__/
 *.pyc
 bfs_state.json
+logs/
+*.db
+.env
+accounts/*/cookies.json
+accounts/*/config.yaml
